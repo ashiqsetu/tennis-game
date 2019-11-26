@@ -1,0 +1,198 @@
+<style type="text/css">
+    * {
+        margin: 0;
+        padding: 0;
+    }
+/*     canvas {
+        display: block;
+        margin: auto;
+    } */
+</style>
+
+<canvas id="canvas" width="800" height="600"></canvas>
+
+<script type="text/javascript">
+
+    let cvs = document.getElementById("canvas");
+    let ctx = cvs.getContext("2d");
+    let ballWidth = 10;
+    let ballHeight = 10;
+    let ballPositionX = 50;
+    let ballPositionY = 50;
+    let ballSpeedX = 10;
+    let ballSpeedY = 4;
+
+    let player1Score = 0;
+    let player1Code = false;
+    let player2Score = 0;
+    let player2Code = false;
+    let maxPointPlayer = 0;
+
+    const WINNING_SCORE = 5;
+    let showingWingScreen = false;
+
+    let paddle1Y = 250;
+    let paddle2Y = 250;
+    const PADDLE_THICKNESS = 10; 
+    const PADDLE_HEIGHT = 100; 
+
+    function calculateMousePosiion(evt) {
+        let rect = cvs.getBoundingClientRect();
+        let root = document.documentElement;
+        let mouseX = evt.clientX - rect.left - root.scrollLeft;
+        let mouseY = evt.clientY - rect.top - root.scrollTop;
+        return {
+            x: mouseX,
+            y: mouseY
+        };
+    }
+
+    function handleMouseClick(evt) {
+        if (showingWingScreen) {
+            player1Score = 0;
+            player2Score = 0;
+            showingWingScreen = false;
+        }
+    }
+
+    window.onload = function() {
+        let framesPerSecond = 30;
+        setInterval(function() {
+            moveEverything();
+            drawEverthing();
+        }, 1000/framesPerSecond);
+
+        cvs.addEventListener('mousedown', handleMouseClick);
+
+        cvs.addEventListener('mousemove', function(evt){
+            var mousePosition = calculateMousePosiion(evt);
+            paddle1Y = mousePosition.y - (PADDLE_HEIGHT / 2);
+            //paddle2Y = mousePosition.y - (PADDLE_HEIGHT / 2);
+        });
+    }
+
+    function drawNet() {
+        for (let i = 5; i < cvs.height; i += 30) {
+            colorRectangle(cvs.width / 2, i, 2, 20, "white");
+        }
+    }
+
+    function ballReset() {
+        if (player1Score >= WINNING_SCORE || player2Score >= WINNING_SCORE) {
+            //maxPointPlayer = Math.max(player1Score, player2Score);
+            showingWingScreen = true;
+
+            if (WINNING_SCORE == player1Score) {
+                player1Code = true;
+            } else {
+                player2Code = true;
+            }
+        }
+
+        ballSpeedX = -ballSpeedX;
+        ballPositionX = cvs.width / 2;
+        ballPositionY = cvs.height / 2;
+    }
+
+    function computerMovement() {
+        let paddle2YCenter = paddle2Y + ( PADDLE_HEIGHT / 2 );
+        if (paddle2YCenter < ballPositionY - 35) {
+            paddle2Y += 6;
+        } else if (paddle2YCenter > ballPositionY + 35) {
+            paddle2Y -= 6;
+        }
+    }
+
+    function moveEverything() {
+        if (showingWingScreen) {
+            return;
+        }
+
+        computerMovement();
+
+        ballPositionX += ballSpeedX;
+        ballPositionY += ballSpeedY;
+
+        if (ballPositionX < 0) {
+            if (ballPositionY > paddle1Y && ballPositionY < paddle1Y + PADDLE_HEIGHT) {
+                ballSpeedX = -ballSpeedX;
+
+                let deltaY = ballPositionY - (paddle1Y + PADDLE_HEIGHT / 2);
+                ballSpeedY = deltaY * 0.35;
+            } else {
+                player2Score++;
+                ballReset();
+            }
+        }
+
+        if (ballPositionX > cvs.width) {
+            if (ballPositionY > paddle2Y && ballPositionY < paddle2Y + PADDLE_HEIGHT) {
+                ballSpeedX = -ballSpeedX;
+
+                let deltaY = ballPositionY - (paddle2Y + PADDLE_HEIGHT / 2);
+                ballSpeedY = deltaY * 0.35;
+            } else {
+                player1Score++;
+                ballReset();
+            }
+        }
+
+        if (ballPositionY < 0) {
+            ballSpeedY = -ballSpeedY;
+        }
+
+        if (ballPositionY > cvs.height) {
+            ballSpeedY = -ballSpeedY;
+        }
+    }
+
+    function drawEverthing() {
+        // background draw
+        colorRectangle(0, 0, cvs.width, cvs.height, "black");  
+
+        if (showingWingScreen) {
+            ctx.fillStyle = "white";
+            //ctx.fillText("Click to play", (cvs.width / 2) - 50, 100);
+
+            if (player1Code) {
+                let greetingMessage = "You won the match. plz click to play continue";
+                ctx.fillText(greetingMessage, (cvs.width / 2) - (greetingMessage.length + 50), 100);
+            } 
+            
+            if (player2Code) {
+                let greetingMessage = "Computer won the match. plz click to play continue";
+                ctx.fillText(greetingMessage, (cvs.width / 2) - (greetingMessage.length + 50), 100);
+            }
+
+            return;
+        }
+
+        // draw net
+        drawNet();
+
+        // left paddle
+        colorRectangle(0, paddle1Y, PADDLE_THICKNESS, PADDLE_HEIGHT, "white");
+
+        // right computer paddle
+        colorRectangle(cvs.width - PADDLE_THICKNESS, paddle2Y, PADDLE_THICKNESS, PADDLE_HEIGHT, "white");
+
+        // ball draw
+        colorCircle(ballPositionX, ballPositionY, 10, "white");
+
+        ctx.fillText(player1Score, 100, 100);
+        ctx.fillText(player2Score, cvs.width - 100, 100);
+    }
+
+    function colorCircle(centerX, centerY, radius, drawColor) {
+        ctx.fillStyle = drawColor;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, true);
+        ctx.fill();
+    }
+
+    function colorRectangle(leftX, topY, width, height, drawColor) {
+        ctx.fillStyle = drawColor;
+        ctx.fillRect(leftX, topY, width, height);
+    }
+
+</script>
